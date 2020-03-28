@@ -2,6 +2,7 @@ import subprocess
 import os
 import pandas as pd
 from datetime import datetime
+import urllib
 
 from src.project.components.CountryManager import CountryManager
 
@@ -12,6 +13,8 @@ class UKManager(CountryManager):
 
     country_indicators_file_name = "covid-19-indicators-uk.csv"
     regional_confirmed_cases_file_name = "covid-19-cases-uk.csv"
+
+    data_url_head = "https://raw.githubusercontent.com/tomwhite/covid-19-uk-data/master/data/"
 
     # TODO: this will have to be changed to the dataset directory
     local_data_path = "."
@@ -29,25 +32,21 @@ class UKManager(CountryManager):
     cumulated_deaths_key = "deceased"
     cumulated_cases_key = "total_cases"
 
-    data_url_head = "https://raw.githubusercontent.com/tomwhite/covid-19-uk-data/master/data/"
-
-    def _download_the_data(self, data_file_name):
+    def _download_the_data(self, data_file_name, output_file):
         data_url = self.data_url_head + data_file_name
         try:
-            subprocess.check_call(["wget", "--no-check-certificate", "--content-disposition", data_url])
+            # subprocess.check_call(["wget", "--no-check-certificate", "--content-disposition", data_url])
+            urllib.urlretrieve(data_url, output_file)
         except (FileNotFoundError):
             subprocess.check_call(["curl", "-LJ0", data_url, "-o", data_file_name])
 
     def download(self):
 
         timestamp = datetime.now().strftime("%Y-%m-%d_%H-%M-%S.%f_")
-
-        os.path.join(raw_data_dir_path, timestamp + self.country_indicators_file_name)
-        self._download_the_data(self.country_indicators_file_name)
-        self._download_the_data(self.regional_confirmed_cases_file_name)
+        self._download_the_data(self.country_indicators_file_name, os.path.join(raw_data_dir_path, timestamp + self.country_indicators_file_name))
+        self._download_the_data(self.regional_confirmed_cases_file_name, os.path.join(raw_data_dir_path, timestamp + self.regional_confirmed_cases_file_name))
 
         return self
-
 
     def get_raw_data(self) -> pd.DataFrame:
         '''
