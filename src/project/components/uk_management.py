@@ -15,16 +15,18 @@ class UKManager(CountryManager):
     regional_confirmed_cases_file_name = "covid-19-cases-uk.csv"
 
     data_url_head = "https://raw.githubusercontent.com/tomwhite/covid-19-uk-data/master/data/"
+    
+    country_indicators_local_name = None
+    regional_confirmed_cases_local_name = None
 
     # TODO: this will have to be changed to the dataset directory
     local_data_path = "."
 
-    final_data_path = "."
-    final_data_file_name = "uk.csv"
+    #final_data_path = "."
+    #final_data_file_name = "uk.csv"
 
     column_names = ["date", "country_iso", "region_code", "region_code_native", "lat", "long", "hosp_with_symptons", "icu_case", "total_hospital", "home_insultation", "new_cummulate_positive",
                     "discharge_and_healed", "deceased", "total_cases", "testing", "predictions", "population", "density", "over_65", "over_65_pop", "beds", "beds_per_capita", ]
-
     # TODO: fill this once the column names is fixed
     date_name_key = "date"
     # country_name_key = ""
@@ -34,26 +36,26 @@ class UKManager(CountryManager):
 
     def _download_the_data(self, data_file_name, output_file):
         data_url = self.data_url_head + data_file_name
-        try:
-            # subprocess.check_call(["wget", "--no-check-certificate", "--content-disposition", data_url])
-            urllib.urlretrieve(data_url, output_file)
-        except (FileNotFoundError):
-            subprocess.check_call(["curl", "-LJ0", data_url, "-o", data_file_name])
+        urllib.urlretrieve(data_url, output_file)
 
     def download(self):
 
         timestamp = datetime.now().strftime("%Y-%m-%d_%H-%M-%S.%f_")
-        self._download_the_data(self.country_indicators_file_name, os.path.join(raw_data_dir_path, timestamp + self.country_indicators_file_name))
-        self._download_the_data(self.regional_confirmed_cases_file_name, os.path.join(raw_data_dir_path, timestamp + self.regional_confirmed_cases_file_name))
+        country_indicators_local_name = timestamp + self.country_indicators_file_name
+        regional_confirmed_cases_local_name = timestamp + self.country_confirmed_cases_file_name
+        self._download_the_data(self.country_indicators_file_name, os.path.join(raw_data_dir_path, self.country_indicators_local_name))
+        self._download_the_data(self.regional_confirmed_cases_file_name, os.path.join(raw_data_dir_path, self.regional_confirmed_cases_local_name))
 
         return self
 
     def get_raw_data(self) -> pd.DataFrame:
         '''
-
         :return: the raw data dataframe
         '''
-        pass
+        regional_data = pd.read_csv(self.regional_confirmed_cases_local_name)
+        country_data = pd.read_csv(self.country_indicators_local_name)
+        # TODO: not sure this is the best thing to do:
+        return pd.concat([coutnry_data, regional_data], axis=0, igore_index=True)
 
     def harmonized(self) -> pd.DataFrame:
         '''
@@ -66,7 +68,7 @@ class UKManager(CountryManager):
 
         data = pd.DataFrame(columns=columns)
 
-        regional_data = pd.read_csv(os.path.join(self.local_data_path, self.regional_confirmed_cases_file_name))
+        regional_data = pd.read_csv(os.path.join(self.local_data_path, self.regional_confirmed_cases_local_name))
 
         nb_regional_data_items = len(regional_data)
 
@@ -80,7 +82,7 @@ class UKManager(CountryManager):
 
         data = data.append(pd.DataFrame(new_items), sort=False)
 
-        country_data = pd.read_csv(os.path.join(self.local_data_path, self.country_indicators_file_name))
+        country_data = pd.read_csv(os.path.join(self.local_data_path, self.country_indicators_local_name))
 
         new_items = {}
 
@@ -110,6 +112,5 @@ class UKManager(CountryManager):
 
         data = data.append(pd.DataFrame(new_items.values()), sort=False)
 
-        data.to_csv(os.path.join(self.final_data_path, self.final_data_file_name))
-
-        # related_rows = country_data [country_data . Date == new_item ["date"]] [country_data . Country == new_item ["region_code"]]
+        #data.to_csv(os.path.join(self.final_data_path, self.final_data_file_name))
+        return data
