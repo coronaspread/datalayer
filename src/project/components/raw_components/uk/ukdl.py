@@ -15,8 +15,8 @@ def download_the_data (data_file_name) :
   except (FileNotFoundError) :
     subprocess . check_call ([ "curl", "-LJ0", data_url, "-o", data_file_name ])
 
-download_the_data (ukglobals . country_indicators_file_name)
-download_the_data (ukglobals . regional_confirmed_cases_file_name)
+download_the_data (ukglobals. country_indicators_file_name)
+download_the_data (ukglobals. regional_confirmed_cases_file_name)
 
 
 
