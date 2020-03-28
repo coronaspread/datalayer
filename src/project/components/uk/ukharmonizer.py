@@ -1,6 +1,6 @@
 
 
-
+import os
 import pandas
 
 import ukglobals
@@ -12,31 +12,36 @@ columns = [ "date", "country_iso", "region_code", "region_code_native", "lat", "
 
 data = pandas . DataFrame (columns = columns)
 
-regional_data = pandas . read_csv (ukglobals . regional_confirmed_cases_file_name)
+regional_data = pandas . read_csv (os .path . join (ukglobals . local_data_path, ukglobals . regional_confirmed_cases_file_name))
 
 
 nb_regional_data_items = len (regional_data)
 
-new_items = {
-    "date" :  regional_data ["Date"] . values,
-    "country_iso" : nb_regional_data_items * [ "GBR", ],
-    "region_code" : regional_data ["Area"] . values,
-    "total_cases" : regional_data ["TotalCases"] . values }
-data = data . append (pandas . DataFrame (new_items))
+new_items = {}
+for column_name in columns :
+  new_items [column_name] = nb_regional_data_items * [ "<NA>", ]
+new_items ["date"] = regional_data ["Date"] . values
+new_items ["country_iso"] = nb_regional_data_items * [ "GBR", ]
+new_items ["region_code"] = regional_data ["Area"] . values
+new_items ["total_cases"] = regional_data ["TotalCases"] . values
+
+data = data . append (pandas . DataFrame (new_items), sort = False)
 
 
 
-country_data = pandas . read_csv (ukglobals . country_indicators_file_name)
+country_data = pandas . read_csv (os .path . join (ukglobals . local_data_path, ukglobals . country_indicators_file_name))
 
 new_items = {}
 
 # TODO: this is probably a terrible way of doing this
 for index, row in country_data . iterrows () :
-  new_item = {
-    "date" : row ["Date"],
-    "country_iso" : "GBR",
-    "region_code" : row ["Country"],
-  }
+  new_item = {}
+  for column_name in columns :
+    new_item [column_name] = "<NA>"
+  new_item ["date"] = row ["Date"]
+  new_item ["country_iso"] = "GBR"
+  new_item ["region_code"] = row ["Country"]
+
   indicator = row ["Indicator"]
   if (indicator == "ConfirmedCases") :
     indicator_key = "total_cases"
@@ -52,9 +57,9 @@ for index, row in country_data . iterrows () :
     new_item [indicator_key] = row ["Value"]
     new_items [item_key] = new_item
 
-data = data . append (pandas . DataFrame (new_items . values ()))
+data = data . append (pandas . DataFrame (new_items . values ()), sort = False)
 
-
+data . to_csv (os . path . join (ukglobals . final_data_path, ukglobals . final_data_file_name))
 
 
   #related_rows = country_data [country_data . Date == new_item ["date"]] [country_data . Country == new_item ["region_code"]]
