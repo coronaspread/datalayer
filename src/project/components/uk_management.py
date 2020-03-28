@@ -55,7 +55,7 @@ class UKManager(CountryManager):
         regional_data = pd.read_csv(self.regional_confirmed_cases_local_name)
         country_data = pd.read_csv(self.country_indicators_local_name)
         # TODO: not sure this is the best thing to do:
-        return pd.concat([coutnry_data, regional_data], axis=0, igore_index=True)
+        return pd.concat([coutnry_data, regional_data], axis=0, ignore_index=True)
 
     def harmonized(self) -> pd.DataFrame:
         '''
