@@ -1,10 +1,11 @@
 import pandas as pd
 
-class CountryManager():
+
+class CountryManager:
 
     url = ...
 
-    def download(self) -> CountryManager:
+    def download(self):
         ...
         return self
 
