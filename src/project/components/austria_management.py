@@ -1,13 +1,12 @@
 import pandas as pd
 import CountryManager
 
-class AustriaManager(CountryManager):
+class AustriaManager():
 
     BASE_URL_AUSTRIA = "https://opendata.arcgis.com/datasets/123014e4ac74408b970dd1eb060f9cf0_4.csv"
-    aut = pd.read_csv(BASE_URL_AUSTRIA, sep=",")
 
     def download(self):
-        self.aut.to_csv("austria.csv", encoding="utf-8-sig", index=False)
+        self.aut = pd.read_csv(self.BASE_URL_AUSTRIA, sep=",")
         return self
 
     def get_raw_data(self) -> pd.DataFrame:
@@ -15,6 +14,7 @@ class AustriaManager(CountryManager):
 
         :return: the raw data dataframe
         '''
+        self.aut.to_csv("austria.csv", encoding="utf-8-sig", index=False)
         return self.aut
 
     def harmonized(self) -> pd.DataFrame:
@@ -44,6 +44,7 @@ if __name__ == '__main__':
     cm = AustriaManager()
 
     #cm.download().harmonized()
+    #cm.download()
     #cm.get_raw_data()
 
     #cm.harmonized()
