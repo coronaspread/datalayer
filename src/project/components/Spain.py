@@ -15,7 +15,8 @@ url_esp = "https://covid19.isciii.es/resources/serie_historica_acumulados.csv"
 
 
 fmt = "%d/%m/%Y"
-esp_covid = pd.read_csv(url_esp, skipfooter=1)
+#esp_covid = pd.read_csv(url_esp, skipfooter=1)
+esp_covid = pd.read_csv(url_esp, encoding = 'cp1252', skipfooter=1)
 esp_covid["Fecha"] = pd.to_datetime(esp_covid["Fecha"], format=fmt)
 
 
@@ -42,7 +43,7 @@ print('Number of Rows in dataframe : ' , numOfRows)
 
 # format from wide to long
 
-id_vars = ['Fecha', 'CCAA Codigo ISO', 'Casos']
+id_vars = ['Fecha', 'CCAA Codigo ISO', 'Casos ']
 value_vars = ['Hospitalizados', 'UCI','Fallecidos']
 esp_covid_melt = pd.melt(frame=esp_covid, value_vars=value_vars, id_vars=id_vars, var_name="type")
 esp_covid_melt.head(n=5)
