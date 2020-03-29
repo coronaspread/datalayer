@@ -33,7 +33,7 @@ from src.project.components.CountryManager import CountryManager
 # pd.set_option('display.max_columns', 500)
 # np.set_printoptions(linewidth=800)
 
-raw_data_dir_path = 'data/raw/uk/'
+raw_data_dir_path = 'data/raw/switzerland/'
 
 data_url = "https://raw.githubusercontent.com/daenuprobst/covid19-cases-switzerland/master/"
 raw_data_file_name = "covid_19_cases_switzerland_standard_format.csv"
