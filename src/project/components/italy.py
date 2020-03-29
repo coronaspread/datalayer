@@ -17,13 +17,13 @@ def get_data_italy():
 
 
     # rename of the columns
-    df.rename(columns = {"data":"report_date", "stato":"country_iso", "codice_regione":"region_large_code",
-                         "denominazione_regione":"region_large_name", "codice_provincia":"region_small_code",
-                         "denominazione_provincia":"region_small_name", "sigla_provincia":"region_small_code_native",
-                         "lat":"lat", "long":"long", "totale_casi":"value"}, inplace = True)
+    df.rename(columns = {"data":"report_date", "stato":"country_code", "codice_regione":"region_code",
+                         "denominazione_regione":"region_name", "codice_provincia":"area_code",
+                         "denominazione_provincia":"area_name", "sigla_provincia":"area_code_native",
+                         "lat":"latitude", "long":"longitude", "totale_casi":"value"}, inplace = True)
 
     df3.rename(
-        columns={"data": "report_date", "stato": "country_iso", "ricoverati_con_sintomi": "hospitalized_with_symptoms",
+        columns={"data": "report_date", "stato": "country_code", "ricoverati_con_sintomi": "hospitalized_with_symptoms",
                  "terapia_intensiva": "intensive_care", "totale_ospedalizzati": "total_hospitalized",
                  "isolamento_domiciliare": "home_confinment",
                  "totale_attualmente_positivi": "total_currently_positive_cases",
@@ -33,40 +33,47 @@ def get_data_italy():
 
 
     # reshape symptoms data from wide to long format
-    id_vars = ['report_date', 'country_iso']
+    id_vars = ['report_date', 'country_code']
     value_vars = [
         'hospitalized_with_symptoms', 'intensive_care', 'total_hospitalized',
         'home_confinment', 'total_currently_positive_cases', 'new_positive_cases',
         'recovered', 'deaths', 'total_positive_cases', 'tests_performed'
     ]
-    data = pd.melt(frame=df3, value_vars=value_vars, id_vars=id_vars, var_name="type")
+    data = pd.melt(frame=df3, value_vars=value_vars, id_vars=id_vars, var_name="value_type")
 
 
     # adding necessary columns
-    df["type"] = "total_positive_cases"
+    df["value_type"] = "total_positive_cases"
 
-    data["region_large_name"] = np.nan
-    data["region_large_code"] = np.nan
-    data["region_small_name"] = np.nan
-    data["region_small_code"] = np.nan
-    data["region_small_code_native"] = np.nan
-    data["lat"] = np.nan
-    data["long"] = np.nan
+    data["region_name"] = np.nan
+    data["region_code"] = np.nan
+    data["area_name"] = np.nan
+    data["area_code"] = np.nan
+    data["area_code_native"] = np.nan
+    data["latitude"] = np.nan
+    data["longitude"] = np.nan
 
 
     # merging data
     it_merge = pd.concat([df, data], ignore_index=True)
 
     # adding necessary columns
-    it_merge["source"] = "Italy"
-    it_merge["region_large_code_native"] = np.nan
+    it_merge["uuid"] = np.nan # hier ID einfügen
+    it_merge["time_database"] = np.nan
+    it_merge["time_downloaded"] = np.nan
+    it_merge["country_name"] = "Italy"
+    it_merge["source"] = "https://github.com/pcm-dpc/COVID-19/blob/master/README.md"
+    it_merge["region_code_native"] = np.nan
     it_merge["gender"] = np.nan
-    it_merge["agecovid"] = np.nan
+    it_merge["age"] = np.nan
+    it_merge["is_new_case"] = it_merge["value_type"] == "new_positive_cases"
+    it_merge["is_new_death"] = it_merge["value_type"] == "deaths"
 
     # splitting Date column in date and time
     new = it_merge["report_date"].str.split("T", expand=True)
     it_merge["report_date"] = new[0].copy()
     it_merge["report_date"] =pd.to_datetime(it_merge["report_date"]).dt.date
+    it_merge["time_report"] = new[1].copy()
 
     # deleting not necessary columns
     it_merge.drop(columns=["note_it", "note_en"], inplace=True)
@@ -74,10 +81,11 @@ def get_data_italy():
 
     # creating csv file
     it_merge.to_csv("ITA_output.csv", index=False, encoding="utf-8", header=True,
-                         columns=["source", "report_date", "country_iso", "region_large_name", "region_large_code",
-                                           "region_large_code_native",
-                                           "region_small_name", "region_small_code", "region_small_code_native", "lat",
-                                           "long", "gender", "agecovid", "type", "value"])
+                         columns=["uuid", "source", "time_report", "time_database", "time_downloaded", "country_name",
+                                    "country_code", "region_name", "region_code", "region_code_native",
+                                  "area_name", "area_code", "area_code_native", "latitude", "longitude",
+                                  "gender", "age", "value_type", "value", "is_new_case",
+                                  "is_new_death"])
 
     return it_merge
 
