@@ -24,7 +24,6 @@ class USAManager():
             self.covid.loc[self.covid.FIPS==county, 'latitude'] = counties.loc[county, 'INTPTLAT']
             self.covid.loc[self.covid.FIPS==county, 'longitude'] = counties.loc[county, 'INTPTLONG']
         self.covid = self.covid.drop('FIPS', axis='columns')
-        self.covid.to_csv('usa_covid.csv')
         return self
 
     def get_raw_data(self) -> pd.DataFrame:
@@ -32,6 +31,7 @@ class USAManager():
 
         :return: the raw data dataframe
         '''
+        self.covid.to_csv('usa_covid.csv')
         return self.covid
 
     def harmonized(self) -> pd.DataFrame:
