@@ -1,116 +1,161 @@
-import subprocess
+"""
+Examples
+--------
+
+    import src.project.components.uk_management as uk_management
+    ukm = uk_management.UKManager()
+    ukm.download().get_raw_data() # download and get the raw data
+    ukm.download().harmonized() # download and harmonize
+    ukm.harmonized() # get the latest harmonized data
+"""
+
 import os
 import pandas as pd
 from datetime import datetime
-import urllib
+import urllib.request
 
 from src.project.components.CountryManager import CountryManager
 
+# pd.set_option('display.width', 700)
+# pd.options.display.max_colwidth = 100
+# pd.set_option('display.max_rows', 100)
+# pd.set_option('display.max_columns', 500)
+# np.set_printoptions(linewidth=800)
 
 raw_data_dir_path = 'data/raw/uk/'
 
+data_url_head = "https://raw.githubusercontent.com/tomwhite/covid-19-uk-data/master/data/"
+country_indicators_file_name = "covid-19-indicators-uk.csv"
+regional_confirmed_cases_file_name = "covid-19-cases-uk.csv"
+
+
 class UKManager(CountryManager):
 
-    country_indicators_file_name = "covid-19-indicators-uk.csv"
-    regional_confirmed_cases_file_name = "covid-19-cases-uk.csv"
-
-    data_url_head = "https://raw.githubusercontent.com/tomwhite/covid-19-uk-data/master/data/"
-    
-    country_indicators_local_name = None
-    regional_confirmed_cases_local_name = None
-
-    # TODO: this will have to be changed to the dataset directory
-    local_data_path = "."
-
-    #final_data_path = "."
-    #final_data_file_name = "uk.csv"
-
-    column_names = ["date", "country_iso", "region_code", "region_code_native", "lat", "long", "hosp_with_symptons", "icu_case", "total_hospital", "home_insultation", "new_cummulate_positive",
-                    "discharge_and_healed", "deceased", "total_cases", "testing", "predictions", "population", "density", "over_65", "over_65_pop", "beds", "beds_per_capita", ]
-    # TODO: fill this once the column names is fixed
-    date_name_key = "date"
-    # country_name_key = ""
-    region_name_key = "region_code"
-    cumulated_deaths_key = "deceased"
-    cumulated_cases_key = "total_cases"
-
-    def _download_the_data(self, data_file_name, output_file):
-        data_url = self.data_url_head + data_file_name
-        urllib.urlretrieve(data_url, output_file)
+    def __init__(self):
+        self.data_hash = None
+        self.data_harmonized = None
 
     def download(self):
 
         timestamp = datetime.now().strftime("%Y-%m-%d_%H-%M-%S.%f_")
-        country_indicators_local_name = timestamp + self.country_indicators_file_name
-        regional_confirmed_cases_local_name = timestamp + self.country_confirmed_cases_file_name
-        self._download_the_data(self.country_indicators_file_name, os.path.join(raw_data_dir_path, self.country_indicators_local_name))
-        self._download_the_data(self.regional_confirmed_cases_file_name, os.path.join(raw_data_dir_path, self.regional_confirmed_cases_local_name))
+
+        for data_file_name in [country_indicators_file_name, regional_confirmed_cases_file_name]:
+            output_file = os.path.join(raw_data_dir_path, timestamp + data_file_name)
+            data_url = data_url_head + data_file_name
+            urllib.request.urlretrieve(data_url, output_file)
 
         return self
 
-    def get_raw_data(self) -> pd.DataFrame:
-        '''
-        :return: the raw data dataframe
-        '''
-        regional_data = pd.read_csv(self.regional_confirmed_cases_local_name)
-        country_data = pd.read_csv(self.country_indicators_local_name)
-        # TODO: not sure this is the best thing to do:
-        return pd.concat([coutnry_data, regional_data], axis=0, ignore_index=True)
+    def get_raw_data(self):
+        """
+
+        Returns
+        -------
+        out : the raw data as a pandas DataFrame
+        """
+
+        timestamp_newest = datetime.strptime('1000-01-01 00-00-00.0', "%Y-%m-%d %H-%M-%S.%f")
+        for root, dirs, filenames in os.walk(raw_data_dir_path):
+            for filename in filenames:
+                timestamp_current = datetime.strptime(" ".join(filename.split('_', 2)[:2]), "%Y-%m-%d %H-%M-%S.%f")
+                if timestamp_current > timestamp_newest:
+                    timestamp_newest = timestamp_current
+
+        timestamp = timestamp_newest.strftime("%Y-%m-%d_%H-%M-%S.%f_")
+        data_country = pd.read_csv(os.path.join(raw_data_dir_path, timestamp + country_indicators_file_name))
+        data_regional = pd.read_csv(os.path.join(raw_data_dir_path, timestamp + regional_confirmed_cases_file_name))
+
+        return data_country, data_regional
 
     def harmonized(self) -> pd.DataFrame:
-        '''
+        """
 
-        :return: the harmonized dataframe
-        '''
-        # note: this is the number of cumulated cases not current
+        Returns
+        -------
+        out : pandas DataFrame,
+        where each row is the report of a number of cases in the value column,
+        missing columns mean, that all values of that column would be missing.
+        The columns are:
 
-        columns = self.column_names
+            uuid : id of the report
+            source : link to or description of the source
+            time_report : the time from when the report was uploaded
+            time_database : the time from when the database was uploaded
+            time_downloaded : the time when the database was downloaded
+            country_name : the name of the country
+            country_code : the iso code of the country
+            region_name : the name of the region, e.g. "Bundesland" in Germany or "Kanton" in Switzerland
+            region_code : the code of the region
+            region_code_native : the code in the native language
+            area_name : the name of the area, e.g. "Kreis" or "City" in Germany
+            area_code : the code in the area
+            area_code_native : the code in the native language
+            latitude : float
+            longitude : float
+            gender : 'F', 'M'
+            age : float or string like "30-40"
+            value_type : str (see below for more information)
+            value : int
+            is_new_case : boolean
+            is_new_death : boolean
 
-        data = pd.DataFrame(columns=columns)
+        Notes
+        -----
+        The column `value_type` can have the following values:
+            'positive_total'
+            'positive_active'
+            'positive_new'
+            'recovered_total'
+            'recovered_new'
+            'deaths_total'
+            'deaths_new'
+            'hospitalized_total'
+            'hospitalized_active'
+            'hospitalized_new'
+            'hospitalized_with_symptoms_total'
+            'hospitalized_with_symptoms_active'
+            'hospitalized_with_symptoms_new'
+            'intensive_care_total'
+            'intensive_care_active'
+            'intensive_care_new'
+            'confined_total'
+            'confined_active'
+            'confined_new'
+            'performed_tests_total'
+            'performed_tests_active'
+            'performed_tests_new'
+        """
 
-        regional_data = pd.read_csv(os.path.join(self.local_data_path, self.regional_confirmed_cases_local_name))
+        data_country, data_regional = self.get_raw_data()
 
-        nb_regional_data_items = len(regional_data)
+        data_hash = hash((tuple(pd.util.hash_pandas_object(data_country)), tuple(pd.util.hash_pandas_object(data_regional))))
 
-        new_items = {}
-        for column_name in columns:
-            new_items[column_name] = nb_regional_data_items * ["<NA>", ]
-        new_items[self.date_name_key] = regional_data["Date"].values
-        new_items["country_iso"] = nb_regional_data_items * ["GBR", ]
-        new_items[self.region_name_key] = regional_data["Area"].values
-        new_items[self.cumulated_cases_key] = regional_data["TotalCases"].values
+        if data_hash != self.data_hash:
 
-        data = data.append(pd.DataFrame(new_items), sort=False)
+            data_regional = data_regional.rename(columns={"TotalCases": "Value"})
+            data_regional['Indicator'] = 'TotalCases'
 
-        country_data = pd.read_csv(os.path.join(self.local_data_path, self.country_indicators_local_name))
+            data_merged = pd.concat([data_country, data_regional], sort=True)
 
-        new_items = {}
+            data_merged.rename(columns={'Area': 'area_name',
+                                        'AreaCode': 'area_code',
+                                        'Country': 'region_name',
+                                        'Date': 'time_report',
+                                        'Indicator': 'value_type',
+                                        'Value': 'value'},
+                               inplace=True)
 
-        # TODO: this is probably a terrible way of doing this
-        for index, row in country_data.iterrows():
-            new_item = {}
-            for column_name in columns:
-                new_item[column_name] = "<NA>"
-            new_item[self.date_name_key] = row["Date"]
-            new_item["country_iso"] = "GBR"
-            new_item[self.region_name_key] = row["Country"]
+            data_merged.value_type.replace(to_replace={'ConfirmedCases': 'positive_total',
+                                                       'Deaths': 'deaths_total',
+                                                       'Tests': 'performed_tests_total',
+                                                       'TotalCases': 'positive_total'},
+                                           inplace=True)
+            data_merged['country_name'] = 'United Kingdom'
+            data_merged['value'] = data_merged.value.\
+                replace(to_replace={'1 to 4': '1-4'}).\
+                apply(pd.to_numeric, errors='ignore')
 
-            indicator = row["Indicator"]
-            if (indicator == "ConfirmedCases"):
-                indicator_key = self.cumulated_cases_key
-            elif (indicator == "Deaths"):
-                indicator_key = self.cumulated_deaths_key
-            item_key = new_item["date"] + new_item["region_code"]
-            is_new = False
-            try:
-                new_items[item_key][indicator_key] = row["Value"]
-            except (KeyError):
-                is_new = True
-            if (is_new):
-                new_item[indicator_key] = row["Value"]
-                new_items[item_key] = new_item
+            self.data_hash = data_hash
+            self.data_harmonized = data_merged
 
-        data = data.append(pd.DataFrame(new_items.values()), sort=False)
-
-        #data.to_csv(os.path.join(self.final_data_path, self.final_data_file_name))
-        return data
+        return self.data_harmonized
