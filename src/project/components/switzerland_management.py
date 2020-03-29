@@ -25,7 +25,6 @@ import pandas as pd
 from datetime import datetime
 import urllib.request
 
-from src.project.components.CountryManager import CountryManager
 
 # pd.set_option('display.width', 700)
 # pd.options.display.max_colwidth = 100
@@ -33,12 +32,12 @@ from src.project.components.CountryManager import CountryManager
 # pd.set_option('display.max_columns', 500)
 # np.set_printoptions(linewidth=800)
 
-raw_data_dir_path = 'data/raw/uk/'
+raw_data_dir_path = 'data/raw/switzerland/'
 
 data_url = "https://raw.githubusercontent.com/daenuprobst/covid19-cases-switzerland/master/"
 raw_data_file_name = "covid_19_cases_switzerland_standard_format.csv"
 
-class SwitzerlandManager(CountryManager):
+class SwitzerlandManager():
 
     def __init__(self):
         self.data_hash = None
@@ -47,6 +46,9 @@ class SwitzerlandManager(CountryManager):
     def download(self):
 
         timestamp = datetime.now().strftime("%Y-%m-%d_%H-%M-%S.%f_")
+
+        if not os.path.exists(raw_data_dir_path):
+            os.makedirs(raw_data_dir_path)
 
         output_file = os.path.join(raw_data_dir_path, timestamp + raw_data_file_name)
         urllib.request.urlretrieve(data_url + raw_data_file_name, output_file)
@@ -146,10 +148,10 @@ class SwitzerlandManager(CountryManager):
                         inplace=True)
             data['positive_total'] = np.nan
             data['performed_test_total'] = np.nan
-                       
+
             id_vars = ['time_report', 'country_name', 'area_name', 'area_code', 'lat', 'long']
-            
-           
+
+
             value_vars = [
               'hospitalized_with_symptoms', 'intensive_care', 'total_hospitalized',
               'home_confinment', 'total_currently_positive_cases', 'new_positive_cases',
@@ -158,7 +160,7 @@ class SwitzerlandManager(CountryManager):
             # if needed remove the all-Nan columns
             #data.drop(['tests_performed', 'hospitalized_with_symptoms', 'intensive_care', 'total_hospitalized', 'home_confinment', 'recovered', 'total_positive_cases'], axis=1, inplace=True)
             data = pd.melt(frame=data, value_vars=value_vars, id_vars=id_vars, var_name='value_type', value_name='value')
-                        
+
 
             self.data_hash = data_hash
             self.data_harmonized = data
