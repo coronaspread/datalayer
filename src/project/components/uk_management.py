@@ -15,8 +15,6 @@ import numpy as np
 from datetime import datetime
 import urllib.request
 
-
-
 # pd.set_option('display.width', 700)
 # pd.options.display.max_colwidth = 100
 # pd.set_option('display.max_rows', 100)
@@ -30,7 +28,7 @@ country_indicators_file_name = "covid-19-indicators-uk.csv"
 regional_confirmed_cases_file_name = "covid-19-cases-uk.csv"
 
 
-class UKManager():
+class UKManager:
 
     def __init__(self):
         self.data_hash = None
@@ -50,7 +48,8 @@ class UKManager():
 
         return self
 
-    def get_raw_data(self):
+    @staticmethod
+    def get_raw_data():
         """
 
         Returns
@@ -130,7 +129,7 @@ class UKManager():
             'performed_tests_new'
         """
 
-        data_per_region, data_per_area = self.get_raw_data()
+        data_per_region, data_per_area = UKManager.get_raw_data()
 
         data_hash = hash((tuple(pd.util.hash_pandas_object(data_per_region)), tuple(pd.util.hash_pandas_object(data_per_area))))
 
