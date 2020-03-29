@@ -158,7 +158,6 @@ class ItalyManager():
 
 
             data_temp = pd.melt(frame=data_country, value_vars=value_vars, id_vars=id_vars, var_name="value_type")
-
             data_regional["value_type"] = "total_positive_cases"
 
             data_temp["region_name"] = np.nan
@@ -186,10 +185,10 @@ class ItalyManager():
             it_merge["report_date"] = splitter[0].copy()
             it_merge["report_date"] =pd.to_datetime(it_merge["report_date"]).dt.date
             it_merge["time_report"] = splitter[1].copy()
-
             it_merge.drop(columns=["note_it", "note_en"], inplace=True)
 
-            data_merged = pd.concat([data_regional, data_country], sort=True)
+
+            data_merged = it_merge
 
             data_merged['country_name'] = 'Italy'
             data_merged['value'] = data_merged.value. \
