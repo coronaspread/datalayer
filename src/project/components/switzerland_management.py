@@ -3,19 +3,29 @@ Examples
 --------
 
     import src.project.components.uk_management as uk_management
-    ukm = uk_management.UKManager()
-    ukm.download().get_raw_data() # download and get the raw data
-    ukm.download().harmonized() # download and harmonize
-    ukm.harmonized() # get the latest harmonized data
+    m = switzerland_management.SwitzerlandManager()
+    m.download().get_raw_data() # download and get the raw data
+    m.download().harmonized() # download and harmonize
+    m.harmonized() # get the latest harmonized data
 """
 
+
+"""
+NOTEs:
+- this data appears to be incomplete: 572 entries only, dates from 2020-03-06 to 2020-03-27
+- columns:
+tests_performed, hospitalized_with_symptoms, intensive_care, total_hospitalized, home_confinment, recovered, total_positive_cases
+ seems to be all NaN
+ (ignoring them for now)
+"""
+
+import numpy as np
 import os
 import pandas as pd
-import numpy as np
 from datetime import datetime
 import urllib.request
 
-
+from src.project.components.CountryManager import CountryManager
 
 # pd.set_option('display.width', 700)
 # pd.options.display.max_colwidth = 100
@@ -25,12 +35,10 @@ import urllib.request
 
 raw_data_dir_path = 'data/raw/uk/'
 
-data_url_head = "https://raw.githubusercontent.com/tomwhite/covid-19-uk-data/master/data/"
-country_indicators_file_name = "covid-19-indicators-uk.csv"
-regional_confirmed_cases_file_name = "covid-19-cases-uk.csv"
+data_url = "https://raw.githubusercontent.com/daenuprobst/covid19-cases-switzerland/master/"
+raw_data_file_name = "covid_19_cases_switzerland_standard_format.csv"
 
-
-class UKManager():
+class SwitzerlandManager(CountryManager):
 
     def __init__(self):
         self.data_hash = None
@@ -40,13 +48,8 @@ class UKManager():
 
         timestamp = datetime.now().strftime("%Y-%m-%d_%H-%M-%S.%f_")
 
-        if not os.path.exists(raw_data_dir_path):
-            os.makedirs(raw_data_dir_path)
-
-        for data_file_name in [country_indicators_file_name, regional_confirmed_cases_file_name]:
-            output_file = os.path.join(raw_data_dir_path, timestamp + data_file_name)
-            data_url = data_url_head + data_file_name
-            urllib.request.urlretrieve(data_url, output_file)
+        output_file = os.path.join(raw_data_dir_path, timestamp + raw_data_file_name)
+        urllib.request.urlretrieve(data_url + raw_data_file_name, output_file)
 
         return self
 
@@ -66,10 +69,9 @@ class UKManager():
                     timestamp_newest = timestamp_current
 
         timestamp = timestamp_newest.strftime("%Y-%m-%d_%H-%M-%S.%f_")
-        data_per_region = pd.read_csv(os.path.join(raw_data_dir_path, timestamp + country_indicators_file_name))
-        data_per_area = pd.read_csv(os.path.join(raw_data_dir_path, timestamp + regional_confirmed_cases_file_name))
+        data= pd.read_csv(os.path.join(raw_data_dir_path, timestamp + raw_data_file_name))
 
-        return data_per_region, data_per_area
+        return data
 
     def harmonized(self) -> pd.DataFrame:
         """
@@ -130,38 +132,35 @@ class UKManager():
             'performed_tests_new'
         """
 
-        data_per_region, data_per_area = self.get_raw_data()
+        data = self.get_raw_data()
 
-        data_hash = hash((tuple(pd.util.hash_pandas_object(data_per_region)), tuple(pd.util.hash_pandas_object(data_per_area))))
+        data_hash = hash(tuple(pd.util.hash_pandas_object(data)))
 
         if data_hash != self.data_hash:
 
-            data_per_area = data_per_area.rename(columns={"TotalCases": "Value"})
-            data_per_area['Indicator'] = 'TotalCases'
-
-            data_merged = pd.concat([data_per_region, data_per_area], sort=True).reset_index(drop=True)
-
-            data_merged.rename(columns={'Area': 'area_name',
-                                        'AreaCode': 'area_code',
-                                        'Country': 'region_name',
-                                        'Date': 'time_report',
-                                        'Indicator': 'value_type',
-                                        'Value': 'value'},
-                               inplace=True)
-
-            data_merged.value_type.replace(to_replace={'ConfirmedCases': 'positive_total',
-                                                       'Deaths': 'deaths_total',
-                                                       'Tests': 'performed_tests_total',
-                                                       'TotalCases': 'positive_total'},
-                                           inplace=True)
-            data_merged['country_name'] = 'United Kingdom'
-            data_merged['value'] = data_merged.value. \
-                replace(to_replace=r'(\d+) ?to ?(\d+)', value=r'\1-\2', regex=True). \
-                apply(pd.to_numeric, errors='ignore')
-            data_merged['region_name'] = data_merged.region_name. \
-                replace(to_replace=r'UK', value=np.nan, regex=True)
+            data.rename(columns={'name_canton': 'area_name',
+                                 'abbreviation_canton': 'area_code',
+                                 'date': 'time_report',
+                                 'country' : 'country_name',
+                                 'deaths' : 'deaths_total'},
+                        inplace=True)
+            data['positive_total'] = np.nan
+            data['performed_test_total'] = np.nan
+                       
+            id_vars = ['time_report', 'country_name', 'area_name', 'area_code', 'lat', 'long']
+            
+           
+            value_vars = [
+              'hospitalized_with_symptoms', 'intensive_care', 'total_hospitalized',
+              'home_confinment', 'total_currently_positive_cases', 'new_positive_cases',
+              'recovered', 'deaths_total', 'total_positive_cases', 'tests_performed'
+            ]
+            # if needed remove the all-Nan columns
+            #data.drop(['tests_performed', 'hospitalized_with_symptoms', 'intensive_care', 'total_hospitalized', 'home_confinment', 'recovered', 'total_positive_cases'], axis=1, inplace=True)
+            data = pd.melt(frame=data, value_vars=value_vars, id_vars=id_vars, var_name='value_type', value_name='value')
+                        
 
             self.data_hash = data_hash
-            self.data_harmonized = data_merged
+            self.data_harmonized = data
 
         return self.data_harmonized
