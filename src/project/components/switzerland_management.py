@@ -146,20 +146,24 @@ class SwitzerlandManager(CountryManager):
                         inplace=True)
             data['positive_total'] = np.nan
             data['performed_test_total'] = np.nan
-                        
+                       
             id_vars = ['time_report', 'country_name', 'area_name', 'area_code', 'lat', 'long']
+            
+            # compute positive_total using new_positive_cases
+            data [ id_vars + [ 'new_positive_cases' ] ] . groupby (by = id_vars) . cumsum (axis = 1)
+
+            
             value_vars = [
               'hospitalized_with_symptoms', 'intensive_care', 'total_hospitalized',
               'home_confinment', 'total_currently_positive_cases', 'new_positive_cases',
               'recovered', 'deaths', 'total_positive_cases', 'tests_performed'
             ]
             # if needed remove the all-Nan columns
-            #data . drop (['tests_performed', 'hospitalized_with_symptoms', 'intensive_care', 'total_hospitalized', 'home_confinment', 'recovered', 'total_positive_cases'], axis = 1, inplace = True)
+            #data.drop(['tests_performed', 'hospitalized_with_symptoms', 'intensive_care', 'total_hospitalized', 'home_confinment', 'recovered', 'total_positive_cases'], axis=1, inplace=True)
             data = pandas.melt(frame=data, value_vars=value_vars, id_vars=id_vars, var_name='value_type', value_name='value')
                         
             data['region_name'] = '<NA>'
 
-            # compute positive_total using new_positive_cases
 
             self.data_hash = data_hash
             self.data_harmonized = data_merged
