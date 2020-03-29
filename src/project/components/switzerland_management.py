@@ -3,10 +3,10 @@ Examples
 --------
 
     import src.project.components.uk_management as uk_management
-    ukm = uk_management.UKManager()
-    ukm.download().get_raw_data() # download and get the raw data
-    ukm.download().harmonized() # download and harmonize
-    ukm.harmonized() # get the latest harmonized data
+    m = switzerland_management.SwitzerlandManager()
+    m.download().get_raw_data() # download and get the raw data
+    m.download().harmonized() # download and harmonize
+    m.harmonized() # get the latest harmonized data
 """
 
 
@@ -49,7 +49,7 @@ class SwitzerlandManager(CountryManager):
         timestamp = datetime.now().strftime("%Y-%m-%d_%H-%M-%S.%f_")
 
         output_file = os.path.join(raw_data_dir_path, timestamp + raw_data_file_name)
-        urllib.request.urlretrieve(data_url, output_file)
+        urllib.request.urlretrieve(data_url + raw_data_file_name, output_file)
 
         return self
 
@@ -153,16 +153,14 @@ class SwitzerlandManager(CountryManager):
             value_vars = [
               'hospitalized_with_symptoms', 'intensive_care', 'total_hospitalized',
               'home_confinment', 'total_currently_positive_cases', 'new_positive_cases',
-              'recovered', 'deaths', 'total_positive_cases', 'tests_performed'
+              'recovered', 'deaths_total', 'total_positive_cases', 'tests_performed'
             ]
             # if needed remove the all-Nan columns
             #data.drop(['tests_performed', 'hospitalized_with_symptoms', 'intensive_care', 'total_hospitalized', 'home_confinment', 'recovered', 'total_positive_cases'], axis=1, inplace=True)
-            data = pandas.melt(frame=data, value_vars=value_vars, id_vars=id_vars, var_name='value_type', value_name='value')
+            data = pd.melt(frame=data, value_vars=value_vars, id_vars=id_vars, var_name='value_type', value_name='value')
                         
-            #data['region_name'] = '<NA>'
-
 
             self.data_hash = data_hash
-            self.data_harmonized = data_merged
+            self.data_harmonized = data
 
         return self.data_harmonized
