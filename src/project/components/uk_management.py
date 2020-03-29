@@ -14,7 +14,7 @@ import pandas as pd
 from datetime import datetime
 import urllib.request
 
-from src.project.components.CountryManager import CountryManager
+
 
 # pd.set_option('display.width', 700)
 # pd.options.display.max_colwidth = 100
@@ -29,7 +29,7 @@ country_indicators_file_name = "covid-19-indicators-uk.csv"
 regional_confirmed_cases_file_name = "covid-19-cases-uk.csv"
 
 
-class UKManager(CountryManager):
+class UKManager():
 
     def __init__(self):
         self.data_hash = None
@@ -38,6 +38,9 @@ class UKManager(CountryManager):
     def download(self):
 
         timestamp = datetime.now().strftime("%Y-%m-%d_%H-%M-%S.%f_")
+
+        if not os.path.exists(raw_data_dir_path):
+            os.makedirs(raw_data_dir_path)
 
         for data_file_name in [country_indicators_file_name, regional_confirmed_cases_file_name]:
             output_file = os.path.join(raw_data_dir_path, timestamp + data_file_name)
