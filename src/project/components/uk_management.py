@@ -151,8 +151,8 @@ class UKManager(CountryManager):
                                                        'TotalCases': 'positive_total'},
                                            inplace=True)
             data_merged['country_name'] = 'United Kingdom'
-            data_merged['value'] = data_merged.value.\
-                replace(to_replace={'1 to 4': '1-4'}).\
+            data_merged['value'] = data_merged.value. \
+                replace(to_replace=r'(\d+) ?to ?(\d+)', value=r'\1-\2', regex=True). \
                 apply(pd.to_numeric, errors='ignore')
 
             self.data_hash = data_hash
