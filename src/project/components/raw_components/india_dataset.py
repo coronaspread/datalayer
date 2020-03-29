@@ -1,4 +1,5 @@
 import requests, json, csv
+import pandas as pd
 
 def download_file_from_google(destination):
     URL = "https://api.rootnet.in/covid19-in/unofficial/covid19india.org "
@@ -36,5 +37,6 @@ def write_csv(data, filename):
 if __name__ == "__main__":
     destination = './dataset_file.csv'
     download_file_from_google(destination)
+    df = pd.read_csv(destination)
 
     # write_csv(read_json(destination), 'output.csv')
