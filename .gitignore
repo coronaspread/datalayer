@@ -1,5 +1,7 @@
 # BrainWorks
 .idea/*
+data/raw/*
+src/general/utils.py
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
