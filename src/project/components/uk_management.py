@@ -11,6 +11,7 @@ Examples
 
 import os
 import pandas as pd
+import numpy as np
 from datetime import datetime
 import urllib.request
 
@@ -62,10 +63,10 @@ class UKManager(CountryManager):
                     timestamp_newest = timestamp_current
 
         timestamp = timestamp_newest.strftime("%Y-%m-%d_%H-%M-%S.%f_")
-        data_country = pd.read_csv(os.path.join(raw_data_dir_path, timestamp + country_indicators_file_name))
-        data_regional = pd.read_csv(os.path.join(raw_data_dir_path, timestamp + regional_confirmed_cases_file_name))
+        data_per_region = pd.read_csv(os.path.join(raw_data_dir_path, timestamp + country_indicators_file_name))
+        data_per_area = pd.read_csv(os.path.join(raw_data_dir_path, timestamp + regional_confirmed_cases_file_name))
 
-        return data_country, data_regional
+        return data_per_region, data_per_area
 
     def harmonized(self) -> pd.DataFrame:
         """
@@ -126,16 +127,16 @@ class UKManager(CountryManager):
             'performed_tests_new'
         """
 
-        data_country, data_regional = self.get_raw_data()
+        data_per_region, data_per_area = self.get_raw_data()
 
-        data_hash = hash((tuple(pd.util.hash_pandas_object(data_country)), tuple(pd.util.hash_pandas_object(data_regional))))
+        data_hash = hash((tuple(pd.util.hash_pandas_object(data_per_region)), tuple(pd.util.hash_pandas_object(data_per_area))))
 
         if data_hash != self.data_hash:
 
-            data_regional = data_regional.rename(columns={"TotalCases": "Value"})
-            data_regional['Indicator'] = 'TotalCases'
+            data_per_area = data_per_area.rename(columns={"TotalCases": "Value"})
+            data_per_area['Indicator'] = 'TotalCases'
 
-            data_merged = pd.concat([data_country, data_regional], sort=True)
+            data_merged = pd.concat([data_per_region, data_per_area], sort=True).reset_index(drop=True)
 
             data_merged.rename(columns={'Area': 'area_name',
                                         'AreaCode': 'area_code',
@@ -154,6 +155,8 @@ class UKManager(CountryManager):
             data_merged['value'] = data_merged.value. \
                 replace(to_replace=r'(\d+) ?to ?(\d+)', value=r'\1-\2', regex=True). \
                 apply(pd.to_numeric, errors='ignore')
+            data_merged['region_name'] = data_merged.region_name. \
+                replace(to_replace=r'UK', value=np.nan, regex=True)
 
             self.data_hash = data_hash
             self.data_harmonized = data_merged
