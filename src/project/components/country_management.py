@@ -1,7 +1,10 @@
+from collections import Iterable
+
 import pandas as pd
 import numpy as np
 
 import src.general.exceptions as exept
+import src.general.utils as utils
 from src.project.components.austria_management import AustriaManager
 from src.project.components.china_management import ChinaManager
 from src.project.components.france_management import FranceManager
@@ -9,14 +12,6 @@ from src.project.components.italy_management import ItalyManager
 from src.project.components.switzerland_management import SwitzerlandManager
 from src.project.components.uk_management import UKManager
 from src.project.components.usa_management import USAManager
-
-
-def docstring_parameter(*sub):
-    def dec(obj):
-        obj.__doc__ = obj.__doc__.format(*sub)
-        return obj
-
-    return dec
 
 
 value_types = ['positive_total',
@@ -70,6 +65,8 @@ class CountryManager:
 
     def __init__(self, country):
         self.country_name = country
+        self.raw_data_hash = None
+        self.data_harmonized = None
 
         country_managers = {
             'austria': AustriaManager,
@@ -85,7 +82,7 @@ class CountryManager:
             raise exept.IllegalArgumentException('The country "' + country + '" is not valid. ' +
                                                  'Valid countries are ' + str(country_managers.keys()) + '.')
 
-        self.country_manager = country_managers[country]
+        self.country_manager = country_managers[country]()
 
     def download(self):
         self.country_manager.download()
@@ -98,7 +95,7 @@ class CountryManager:
         -------
         out : the raw data as a pandas DataFrame
         """
-        return self.country_manager.get_raw_data()
+        return self.country_manager.raw_data
 
     def harmonized(self) -> pd.DataFrame:
         """
@@ -158,23 +155,35 @@ class CountryManager:
             'performed_tests_active'
             'performed_tests_new'
         """
-        data_harmonized = self.country_manager.harmonized()
 
-        invalid_columns = [column_name for column_name in data_harmonized.columns if column_name not in columns]
+        raw_data = self.country_manager.raw_data()
+        raw_data_hash = self.country_manager.raw_data_hash(raw_data)
+
+        if self.raw_data_hash != raw_data_hash:
+            raw_data_function = self.country_manager.raw_data
+            self.country_manager.raw_data = lambda: raw_data
+            data_harmonized = self.country_manager.harmonized()
+            self.country_manager.raw_data = raw_data_function
+            self.raw_data_hash = raw_data_hash
+            self.data_harmonized = data_harmonized
+
+        invalid_columns = [column_name for column_name in self.data_harmonized.columns if column_name not in columns]
         if invalid_columns:
             raise exept.InvalidDataModel(
                 'The dataset for the country ' + self.country_name + ' is not correctly harmonized.' +
                 'The columns ' + str(invalid_columns) + ' are invalid')
 
-        invalid_value_types = list(np.unique([value_type for value_type in data_harmonized['value_type'] if value_type not in value_types]))
+        invalid_value_types = list(np.unique([value_type for value_type in self.data_harmonized['value_type'] if value_type not in value_types]))
         if invalid_value_types:
             raise exept.InvalidDataModel('The dataset for the country ' + self.country_name + ' is not correctly harmonized.' +
                                          'The column value_type ' + str(invalid_value_types) + ' are invalid')
 
-        return data_harmonized
+        return self.data_harmonized
 
 
 if __name__ == '__main__':
+
+    # from src.project.components.uk_management import UKManager
     # from src.project.components.country_management import CountryManager
 
     import pandas as pd
@@ -187,9 +196,13 @@ if __name__ == '__main__':
     np.set_printoptions(linewidth=800)
 
     cm = CountryManager('uk')
-    data_harmonized = cm.harmonized()
+    
+    cm.harmonized()
+    cm.harmonized()
+    cm.country_manager.harmonized()
+    type(cm.country_manager.raw_data)
 
-    cm.download().harmonized()
+    cm.download().harmonized
     cm.get_raw_data()
 
-    cm.harmonized()
+    cm.harmonized
