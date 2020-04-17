@@ -80,10 +80,6 @@ raw_data_file_name = "COVID19_Fallzahlen_CH_total.csv"
 
 class SwitzerlandManager():
 
-    def __init__(self):
-        self.data_hash = None
-        self.data_harmonized = None
-
     def download(self):
 
         timestamp = datetime.now().strftime("%Y-%m-%d_%H-%M-%S.%f_")
@@ -97,12 +93,6 @@ class SwitzerlandManager():
         return self
 
     def get_raw_data(self):
-        """
-
-        Returns
-        -------
-        out : the raw data as a pandas DataFrame
-        """
 
         timestamp_newest = datetime.strptime('1000-01-01 00-00-00.0', "%Y-%m-%d %H-%M-%S.%f")
         for root, dirs, filenames in os.walk(raw_data_dir_path):
@@ -116,86 +106,39 @@ class SwitzerlandManager():
 
         return data
 
+    @staticmethod
+    def raw_data_hash(raw_data):
+        return hash(tuple(pd.util.hash_pandas_object(raw_data)))
+
     def harmonized(self) -> pd.DataFrame:
-        """
-
-        Returns
-        -------
-        out : pandas DataFrame,
-        where each row is the report of a number of cases in the value column,
-        missing columns mean, that all values of that column would be missing.
-        The columns are:
-
-            uuid : id of the report
-            source : link to or description of the source
-            time_report : the time from when the report was uploaded (date)
-            time_report_clock_time : the time from when the report was uploaded (time)
-            time_database : the time from when the database was uploaded
-            time_downloaded : the time when the database was downloaded
-            country_name : the name of the country
-            country_code : the iso code of the country
-            region_name : the name of the region, e.g. "Bundesland" in Germany or "Kanton" in Switzerland
-            region_code : the code of the region
-            region_code_native : the code in the native language
-            area_name : the name of the area, e.g. "Kreis" or "City" in Germany
-            area_code : the code in the area
-            area_code_native : the code in the native language
-            latitude : float
-            longitude : float
-            gender : 'F', 'M'
-            age : float or string like "30-40"
-            value_type : str (see below for more information)
-            value : int
-            is_new_case : boolean
-            is_new_death : boolean
-
-        Notes
-        -----
-        The column `value_type` can have the following values:
-            'positive_total'
-            'released_total'
-            'deaths_total'
-            'hospitalized_total'
-            'intensive_care_total'
-            'vent_total',
-            'performed_tests_total'
-        """
 
         data = self.get_raw_data()
 
-        data_hash = hash(tuple(pd.util.hash_pandas_object(data)))
+        data.rename(columns={'abbreviation_canton_and_fl': 'region_code',
+                             'date': 'time_report',
+                             'time': 'time_report_clock_time',
+                             'ncumul_deceased' : 'deaths_total',
+                             'ncumul_tested' : 'performed_tests_total',
+                             'ncumul_conf' : 'positive_total',
+                             'ncumul_hosp' : 'hospitalized_total',
+                             'ncumul_ICU' : 'intensive_care_total',
+                             'ncumul_released' : 'released_total',
+                             'ncumul_vent' : 'vent_total'},
+                    inplace=True)
+        data['country_name'] = 'Switzerland'
+        data['region_name'] = 'Canton'
 
-        if data_hash != self.data_hash:
+        id_vars = ['time_report', 'time_report_clock_time', 'country_name', 'region_code', 'source']
 
-            data.rename(columns={'abbreviation_canton_and_fl': 'region_code',
-                                 'date': 'time_report',
-                                 'time': 'time_report_clock_time',
-                                 'ncumul_deceased' : 'deaths_total',
-                                 'ncumul_tested' : 'performed_tests_total',
-                                 'ncumul_conf' : 'positive_total',
-                                 'ncumul_hosp' : 'hospitalized_total',
-                                 'ncumul_ICU' : 'intensive_care_total',
-                                 'ncumul_released' : 'released_total',
-                                 'ncumul_vent' : 'vent_total'},
-                        inplace=True)
-            data['country_name'] = 'Switzerland'
-            data['region_name'] = 'Canton'
+        value_vars = [
+          'performed_tests_total', 'positive_total', 'hospitalized_total',
+          'intensive_care_total', 'vent_total',
+          'released_total', 'deaths_total',
+        ]
+        data = pd.melt(frame=data, value_vars=value_vars, id_vars=id_vars, var_name='value_type', value_name='value')
 
-            id_vars = ['time_report', 'time_report_clock_time', 'country_name', 'region_code', 'source']
+        data['region_code_native'] = data['region_code']
+        data['region_code_native'] = data['region_code_native'].apply(lambda c : canton_code_to_name_dict[c])
+        data.loc[data.region_code == 'FL', 'region_name'] = 'FL'
 
-
-            value_vars = [
-              'performed_tests_total', 'positive_total', 'hospitalized_total',
-              'intensive_care_total', 'vent_total',
-              'released_total', 'deaths_total', 
-            ]
-            data = pd.melt(frame=data, value_vars=value_vars, id_vars=id_vars, var_name='value_type', value_name='value')
-
-            data['region_code_native'] = data['region_code']
-            data['region_code_native'] = data['region_code_native'].apply(lambda c : canton_code_to_name_dict[c])
-            data.loc[data.region_code == 'FL', 'region_name'] = 'FL'
-
-            self.data_hash = data_hash
-            self.data_harmonized = data
-
-        return self.data_harmonized
+        return data

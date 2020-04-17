@@ -16,10 +16,6 @@ raw_data_dir_path = 'data/raw/germany/'
 
 class GermanyManager:
 
-    def __init__(self):
-        self.data_hash = None
-        self.data_harmonized = None
-
     def download(self):
 
         timestamp = datetime.now().strftime("%Y-%m-%d_%H-%M-%S.%f_")
@@ -35,7 +31,7 @@ class GermanyManager:
         return self
 
     @staticmethod
-    def get_raw_data():
+    def raw_data():
 
         timestamp_newest = datetime.strptime('1000-01-01 00-00-00.0', "%Y-%m-%d %H-%M-%S.%f")
         for root, dirs, filenames in os.walk(raw_data_dir_path):
@@ -48,29 +44,26 @@ class GermanyManager:
         data_per_region = pd.read_csv(os.path.join(raw_data_dir_path, timestamp + "covid-19-cases-germany.csv"))
         return data_per_region
 
+    @staticmethod
+    def raw_data_hash(raw_data):
+        return hash(tuple(pd.util.hash_pandas_object(raw_data)))
+
     def harmonized(self) -> pd.DataFrame:
 
-        data_per_region = GermanyManager.get_raw_data()
+        data_per_region = self.raw_data()
+        data_per_region['source'] = url
+        data_per_region['country_name'] = 'Germany'
+        data_per_region = data_per_region. \
+            rename(columns={'fb_id': 'uuid',
+                            'value_type': 'positive_total',
+                            'cases': 'value',
+                            'location_label': 'area_code_native',
+                            'publication_datetime': 'time_report',
+                            'fb_datetime': 'time_database',
+                            'bundesland_name': 'region_name',
+                            'bundesland_ags': 'region_code',
+                            'kreis_name': 'area_name',
+                            'kreis_ags': 'area_code'}). \
+            drop(['cases_per_population', 'cases_per_100k', 'population', 'kreis_nuts', 'Unnamed: 0'], axis=1)
 
-        data_hash = hash(tuple(pd.util.hash_pandas_object(data_per_region)))
-
-        if data_hash != self.data_hash:
-            data_per_region['source'] = url
-            data_per_region.rename(columns={'fb_id': 'uuid',
-                                            'value_type': 'positive_total',
-                                            'cases': 'value',
-                                            'location_label': 'area_code_native',
-                                            'publication_datetime': 'time_report',
-                                            'fb_datetime': 'time_database',
-                                            'bundesland_name': 'region_name',
-                                            'bundesland_ags': 'region_code',
-                                            'kreis_name': 'area_name',
-                                            'kreis_ags': 'area_code'},
-                                   inplace=True)
-            data_per_region['country_name'] = 'Germany'
-
-            self.data_hash = data_hash
-            self.data_harmonized = data_per_region.drop(['cases_per_population', 'cases_per_100k', 'population', 'kreis_nuts', 'Unnamed: 0'], axis=1)
-
-        return self.data_harmonized
-
+        return data_per_region
