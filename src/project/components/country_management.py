@@ -1,10 +1,6 @@
-from collections import Iterable
-
 import pandas as pd
-import numpy as np
 
 import src.general.exceptions as exept
-import src.general.utils as utils
 from src.project.components.austria_management import AustriaManager
 from src.project.components.china_management import ChinaManager
 from src.project.components.france_management import FranceManager
