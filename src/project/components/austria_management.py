@@ -26,7 +26,7 @@ regional_confirmed_cases_file_name = "covid-19-cases-aut.csv"
 
 
 
-class AUTManager:
+class AustriaManager:
 
     def __init__(self):
         self.data_hash = None

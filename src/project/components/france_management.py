@@ -4,9 +4,9 @@ import re
 import requests
 import urllib
 from urllib.parse import urlparse
-import CountryManager
 
-class FranceManager(CountryManager):
+
+class FranceManager:
 
     def __init__(self):
         self.url = 'https://www.data.gouv.fr/fr/datasets/donnees-des-urgences-hospitalieres-et-de-sos-medecins-relatives-a-lepidemie-de-covid-19/'

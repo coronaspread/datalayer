@@ -2,13 +2,12 @@ import pandas as pd
 import numpy as np
 import os
 
-import CountryManager
 
 """
 Harmonizer missing as of now
 """
 
-class ChinaManager(CountryManager):
+class ChinaManager:
 
     LOCATION =  os.path.abspath('__file__').replace('__file__', '')
     DATETIME_FORMAT = '%dd.%mm.%YY'
