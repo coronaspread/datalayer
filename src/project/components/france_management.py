@@ -23,19 +23,11 @@ class FranceManager:
             urllib.request.urlretrieve(url, filename)
         return self
 
-    def get_raw_data(self) -> pd.DataFrame:
-        '''
-
-        :return: the raw data dataframe
-        '''
+    def raw_data(self) -> pd.DataFrame:
         return self.download()
 
 
     def harmonized(self) -> pd.DataFrame:
-        '''
-
-        :return: the harmonized dataframe
-        '''
         pass
 
 

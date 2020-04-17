@@ -41,7 +41,7 @@ class USAManager:
         return self
 
     @staticmethod
-    def get_raw_data():
+    def raw_data():
 
         timestamp_newest = datetime.strptime('1000-01-01 00-00-00.0', "%Y-%m-%d %H-%M-%S.%f")
         for root, dirs, filenames in os.walk(raw_data_dir_path):
@@ -64,7 +64,7 @@ class USAManager:
 
     def harmonized(self) -> pd.DataFrame:
 
-        data_covid, data_census = USAManager.get_raw_data()
+        data_covid, data_census = USAManager.raw_data()
 
         data_covid.loc[data_covid.county == 'New York City', 'fips'] = 36061
         # data_covid = data_covid.dropna(subset=['fips'])

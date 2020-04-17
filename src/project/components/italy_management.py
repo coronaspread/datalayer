@@ -46,7 +46,7 @@ class ItalyManager():
 
         return self
 
-    def get_raw_data(self):
+    def raw_data(self):
 
         timestamp_newest = datetime.strptime('1000-01-01 00-00-00.0', "%Y-%m-%d %H-%M-%S.%f")
         for root, dirs, filenames in os.walk(raw_data_dir_path):
@@ -67,7 +67,7 @@ class ItalyManager():
 
     def harmonized(self) -> pd.DataFrame:
 
-        data_country, data_regional = self.get_raw_data()
+        data_country, data_regional = self.raw_data()
 
         data_regional.rename(columns = {"data":"report_date", "stato":"country_code", "codice_regione":"region_code",
                              "denominazione_regione":"region_name", "codice_provincia":"area_code",

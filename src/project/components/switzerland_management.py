@@ -92,7 +92,7 @@ class SwitzerlandManager():
 
         return self
 
-    def get_raw_data(self):
+    def raw_data(self):
 
         timestamp_newest = datetime.strptime('1000-01-01 00-00-00.0', "%Y-%m-%d %H-%M-%S.%f")
         for root, dirs, filenames in os.walk(raw_data_dir_path):
@@ -112,7 +112,7 @@ class SwitzerlandManager():
 
     def harmonized(self) -> pd.DataFrame:
 
-        data = self.get_raw_data()
+        data = self.raw_data()
 
         data.rename(columns={'abbreviation_canton_and_fl': 'region_code',
                              'date': 'time_report',

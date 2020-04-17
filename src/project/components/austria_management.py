@@ -26,7 +26,7 @@ class AustriaManager:
         return self
 
     @staticmethod
-    def get_raw_data(self):
+    def raw_data(self):
 
         timestamp_newest = datetime.strptime('1000-01-01 00-00-00.0', "%Y-%m-%d %H-%M-%S.%f")
         for root, dirs, filenames in os.walk(raw_data_dir_path):
@@ -46,7 +46,7 @@ class AustriaManager:
 
     def harmonized(self) -> pd.DataFrame:
 
-        data_regional = self.get_raw_data()
+        data_regional = self.raw_data()
 
         data_regional.drop(columns=["OBJECTID",
                                     "infizierte_pro_ew",

@@ -26,7 +26,7 @@ class ChinaManager:
         return self
 
 
-    def get_raw_data(self) -> pd.DataFrame:
+    def raw_data(self) -> pd.DataFrame:
         '''
 
         :return: the raw data dataframe
