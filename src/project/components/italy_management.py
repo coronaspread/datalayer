@@ -33,10 +33,6 @@ data_file_list = [regional_confirmed_cases_file_name, country_case_outcome_file_
 
 class ItalyManager():
 
-    def __init__(self):
-        self.data_hash = None
-        self.data_harmonized = None
-
     def download(self):
 
         timestamp = datetime.now().strftime("%Y-%m-%d_%H-%M-%S.%f_")
@@ -51,12 +47,6 @@ class ItalyManager():
         return self
 
     def get_raw_data(self):
-        """
-
-        Returns
-        -------
-        out : the raw data as a pandas DataFrame
-        """
 
         timestamp_newest = datetime.strptime('1000-01-01 00-00-00.0', "%Y-%m-%d %H-%M-%S.%f")
         for root, dirs, filenames in os.walk(raw_data_dir_path):
@@ -71,131 +61,72 @@ class ItalyManager():
 
         return data_country, data_regional
 
+    @staticmethod
+    def raw_data_hash(raw_data):
+        return hash((tuple(pd.util.hash_pandas_object(raw_data[0])), tuple(pd.util.hash_pandas_object(raw_data[1]))))
+
     def harmonized(self) -> pd.DataFrame:
-        """
-
-        Returns
-        -------
-        out : pandas DataFrame,
-        where each row is the report of a number of cases in the value column,
-        missing columns mean, that all values of that column would be missing.
-        The columns are:
-
-            uuid : id of the report
-            source : link to or description of the source
-            time_report : the time from when the report was uploaded
-            time_database : the time from when the database was uploaded
-            time_downloaded : the time when the database was downloaded
-            country_name : the name of the country
-            country_code : the iso code of the country
-            region_name : the name of the region, e.g. "Bundesland" in Germany or "Kanton" in Switzerland
-            region_code : the code of the region
-            region_code_native : the code in the native language
-            area_name : the name of the area, e.g. "Kreis" or "City" in Germany
-            area_code : the code in the area
-            area_code_native : the code in the native language
-            latitude : float
-            longitude : float
-            gender : 'F', 'M'
-            age : float or string like "30-40"
-            value_type : str (see below for more information)
-            value : int
-            is_new_case : boolean
-            is_new_death : boolean
-
-        Notes
-        -----
-        The column `value_type` can have the following values:
-            'positive_total'
-            'positive_active'
-            'positive_new'
-            'recovered_total'
-            'recovered_new'
-            'deaths_total'
-            'deaths_new'
-            'hospitalized_total'
-            'hospitalized_active'
-            'hospitalized_new'
-            'hospitalized_with_symptoms_total'
-            'hospitalized_with_symptoms_active'
-            'hospitalized_with_symptoms_new'
-            'intensive_care_total'
-            'intensive_care_active'
-            'intensive_care_new'
-            'confined_total'
-            'confined_active'
-            'confined_new'
-            'performed_tests_total'
-            'performed_tests_active'
-            'performed_tests_new'
-        """
 
         data_country, data_regional = self.get_raw_data()
 
-        data_hash = hash((tuple(pd.util.hash_pandas_object(data_regional)), tuple(pd.util.hash_pandas_object(data_country))))
+        data_regional.rename(columns = {"data":"report_date", "stato":"country_code", "codice_regione":"region_code",
+                             "denominazione_regione":"region_name", "codice_provincia":"area_code",
+                             "denominazione_provincia":"area_name", "sigla_provincia":"area_code_native",
+                             "lat":"latitude", "long":"longitude", "totale_casi":"value"}, inplace = True)
 
-        if data_hash != self.data_hash:
-            data_regional.rename(columns = {"data":"report_date", "stato":"country_code", "codice_regione":"region_code",
-                                 "denominazione_regione":"region_name", "codice_provincia":"area_code",
-                                 "denominazione_provincia":"area_name", "sigla_provincia":"area_code_native",
-                                 "lat":"latitude", "long":"longitude", "totale_casi":"value"}, inplace = True)
+        data_country.rename(columns={"data": "report_date", "stato": "country_code", "ricoverati_con_sintomi": "hospitalized_with_symptoms",
+                 "terapia_intensiva": "intensive_care", "totale_ospedalizzati": "total_hospitalized",
+                 "isolamento_domiciliare": "home_confinment",
+                 "totale_attualmente_positivi": "total_currently_positive_cases",
+                 "nuovi_attualmente_positivi": "new_positive_cases", "dimessi_guariti": "recovered",
+                 "deceduti": "deaths",
+                 "totale_casi": "total_positive_cases", "tamponi": "tests_performed"}, inplace=True)
 
-            data_country.rename(columns={"data": "report_date", "stato": "country_code", "ricoverati_con_sintomi": "hospitalized_with_symptoms",
-                     "terapia_intensiva": "intensive_care", "totale_ospedalizzati": "total_hospitalized",
-                     "isolamento_domiciliare": "home_confinment",
-                     "totale_attualmente_positivi": "total_currently_positive_cases",
-                     "nuovi_attualmente_positivi": "new_positive_cases", "dimessi_guariti": "recovered",
-                     "deceduti": "deaths",
-                     "totale_casi": "total_positive_cases", "tamponi": "tests_performed"}, inplace=True)
+        id_vars = ['report_date', 'country_code']
 
-            id_vars = ['report_date', 'country_code']
-
-            value_vars = [
-                'hospitalized_with_symptoms', 'intensive_care', 'total_hospitalized',
-                'home_confinment', 'total_currently_positive_cases', 'new_positive_cases',
-                'recovered', 'deaths', 'total_positive_cases', 'tests_performed'
-            ]
+        value_vars = [
+            'hospitalized_with_symptoms', 'intensive_care', 'total_hospitalized',
+            'home_confinment', 'total_currently_positive_cases', 'new_positive_cases',
+            'recovered', 'deaths', 'total_positive_cases', 'tests_performed'
+        ]
 
 
-            data_temp = pd.melt(frame=data_country, value_vars=value_vars, id_vars=id_vars, var_name="value_type")
-            data_regional["value_type"] = "total_positive_cases"
+        data_temp = pd.melt(frame=data_country, value_vars=value_vars, id_vars=id_vars, var_name="value_type")
+        data_regional["value_type"] = "total_positive_cases"
 
-            data_temp["region_name"] = np.nan
-            data_temp["region_code"] = np.nan
-            data_temp["area_name"] = np.nan
-            data_temp["area_code"] = np.nan
-            data_temp["area_code_native"] = np.nan
-            data_temp["latitude"] = np.nan
-            data_temp["longitude"] = np.nan
+        data_temp["region_name"] = np.nan
+        data_temp["region_code"] = np.nan
+        data_temp["area_name"] = np.nan
+        data_temp["area_code"] = np.nan
+        data_temp["area_code_native"] = np.nan
+        data_temp["latitude"] = np.nan
+        data_temp["longitude"] = np.nan
 
-            it_merge = pd.concat([data_regional, data_temp], ignore_index=True)
+        it_merge = pd.concat([data_regional, data_temp], ignore_index=True)
 
-            it_merge["uuid"] = np.nan # hier ID einfügen
-            it_merge["time_database"] = np.nan
-            it_merge["time_downloaded"] = np.nan
-            it_merge["country_name"] = "Italy"
-            it_merge["source"] = "https://github.com/pcm-dpc/COVID-19/blob/master/README.md"
-            it_merge["region_code_native"] = np.nan
-            it_merge["gender"] = np.nan
-            it_merge["age"] = np.nan
-            it_merge["is_new_case"] = it_merge["value_type"] == "new_positive_cases"
-            it_merge["is_new_death"] = it_merge["value_type"] == "deaths"
+        it_merge["uuid"] = np.nan # hier ID einfügen
+        it_merge["time_database"] = np.nan
+        it_merge["time_downloaded"] = np.nan
+        it_merge["country_name"] = "Italy"
+        it_merge["source"] = "https://github.com/pcm-dpc/COVID-19/blob/master/README.md"
+        it_merge["region_code_native"] = np.nan
+        it_merge["gender"] = np.nan
+        it_merge["age"] = np.nan
+        it_merge["is_new_case"] = it_merge["value_type"] == "new_positive_cases"
+        it_merge["is_new_death"] = it_merge["value_type"] == "deaths"
 
-            splitter = it_merge["report_date"].str.split("T", expand=True)
-            it_merge["report_date"] = splitter[0].copy()
-            it_merge["report_date"] =pd.to_datetime(it_merge["report_date"]).dt.date
-            it_merge["time_report"] = splitter[1].copy()
-            it_merge.drop(columns=["note_it", "note_en"], inplace=True)
+        splitter = it_merge["report_date"].str.split("T", expand=True)
+        it_merge["report_date"] = splitter[0].copy()
+        it_merge["report_date"] =pd.to_datetime(it_merge["report_date"]).dt.date
+        it_merge["time_report"] = splitter[1].copy()
+        it_merge.drop(columns=["note_it", "note_en"], inplace=True)
 
 
-            data_merged = it_merge
+        data_merged = it_merge
 
-            data_merged['country_name'] = 'Italy'
-            data_merged['value'] = data_merged.value. \
-                replace(to_replace=r'(\d+) ?to ?(\d+)', value=r'\1-\2', regex=True). \
-                apply(pd.to_numeric, errors='ignore')
+        data_merged['country_name'] = 'Italy'
+        data_merged['value'] = data_merged.value. \
+            replace(to_replace=r'(\d+) ?to ?(\d+)', value=r'\1-\2', regex=True). \
+            apply(pd.to_numeric, errors='ignore')
 
-            self.data_hash = data_hash
-            self.data_harmonized = data_merged
-
-        return self.data_harmonized
+        return data_merged
