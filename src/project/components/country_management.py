@@ -4,6 +4,7 @@ import src.general.exceptions as exept
 from src.project.components.austria_management import AustriaManager
 from src.project.components.china_management import ChinaManager
 from src.project.components.france_management import FranceManager
+from src.project.components.germany_management import GermanyManager
 from src.project.components.italy_management import ItalyManager
 from src.project.components.switzerland_management import SwitzerlandManager
 from src.project.components.uk_management import UKManager
@@ -68,6 +69,7 @@ class CountryManager:
             'austria': AustriaManager,
             'china': ChinaManager,
             'france': FranceManager,
+            'germany': GermanyManager,
             'italy': ItalyManager,
             'switzerland': SwitzerlandManager,
             'uk': UKManager,
@@ -165,9 +167,8 @@ class CountryManager:
 
         invalid_columns = [column_name for column_name in self.data_harmonized.columns if column_name not in columns]
         if invalid_columns:
-            raise exept.InvalidDataModel(
-                'The dataset for the country ' + self.country_name + ' is not correctly harmonized.' +
-                'The columns ' + str(invalid_columns) + ' are invalid')
+            raise exept.InvalidDataModel('The dataset for the country ' + self.country_name + ' is not correctly harmonized.' +
+                                         'The columns ' + str(invalid_columns) + ' are invalid')
 
         invalid_value_types = list(np.unique([value_type for value_type in self.data_harmonized['value_type'] if value_type not in value_types]))
         if invalid_value_types:
