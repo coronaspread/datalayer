@@ -11,6 +11,14 @@ Examples
 
 
 """
+NEW DATA:
+- there is a date and time column (date get converted into time_report, time is left as is)
+- added indicators:
+  release_total (slightly different from recovery in meaning)
+  vent_total (not sure what to do with this)
+- region code 'FL' id assume this is for "federal level" but idk for sure, left it as a separate region
+  
+OLD SOURCE
 NOTEs:
 - this data appears to be incomplete: 572 entries only, dates from 2020-03-06 to 2020-03-27
 - columns:
@@ -34,8 +42,41 @@ import urllib.request
 
 raw_data_dir_path = 'data/raw/switzerland/'
 
-data_url = "https://raw.githubusercontent.com/daenuprobst/covid19-cases-switzerland/master/"
-raw_data_file_name = "covid_19_cases_switzerland_standard_format.csv"
+# https://kb.bullseyelocations.com/support/solutions/articles/5000695305-switzerland-canton-codes
+canton_code_to_name_dict = {
+    "AG" : "Aargau",
+    "AR" : "Appenzell Ausserrhoden",
+    "AI" : "Appenzell Innerrhoden",
+    "BL" : "Basel-Landschaft",
+    "BS" : "Basel-Stadt",
+    "BE" : "Bern",
+    "FR" : "Fribourg",
+    "GE" : "Geneva",
+    "GL" : "Glarus",
+    "GR" : "Graubünden",
+    "JU" : "Jura",
+    "LU" : "Luzern",
+    "NE" : "Neuchâtel",
+    "NW" : "Nidwalden",
+    "OW" : "Obwalden",
+    "SH" : "Schaffhausen",
+    "SZ" : "Schwyz",
+    "SO" : "Solothurn",
+    "SG" : "St. Gallen",
+    "TG" : "Thurgau",
+    "TI" : "Ticino",
+    "UR" : "Uri",
+    "VS" : "Valais",
+    "VD" : "Vaud",
+    "ZG" : "Zug",
+    "ZH" : "Zürich",
+    'FL' : np.nan
+}
+
+#OLD SOURCE: data_url_path = "https://raw.githubusercontent.com/daenuprobst/covid19-cases-switzerland/master/"
+#OLD SOURCE: raw_data_file_name = "covid_19_cases_switzerland_standard_format.csv"
+data_url_path = "https://raw.githubusercontent.com/openZH/covid_19/master/"
+raw_data_file_name = "COVID19_Fallzahlen_CH_total.csv"
 
 class SwitzerlandManager():
 
@@ -51,7 +92,7 @@ class SwitzerlandManager():
             os.makedirs(raw_data_dir_path)
 
         output_file = os.path.join(raw_data_dir_path, timestamp + raw_data_file_name)
-        urllib.request.urlretrieve(data_url + raw_data_file_name, output_file)
+        urllib.request.urlretrieve(data_url_path + raw_data_file_name, output_file)
 
         return self
 
@@ -87,7 +128,8 @@ class SwitzerlandManager():
 
             uuid : id of the report
             source : link to or description of the source
-            time_report : the time from when the report was uploaded
+            time_report : the time from when the report was uploaded (date)
+            time_report_clock_time : the time from when the report was uploaded (time)
             time_database : the time from when the database was uploaded
             time_downloaded : the time when the database was downloaded
             country_name : the name of the country
@@ -111,27 +153,12 @@ class SwitzerlandManager():
         -----
         The column `value_type` can have the following values:
             'positive_total'
-            'positive_active'
-            'positive_new'
-            'recovered_total'
-            'recovered_new'
+            'released_total'
             'deaths_total'
-            'deaths_new'
             'hospitalized_total'
-            'hospitalized_active'
-            'hospitalized_new'
-            'hospitalized_with_symptoms_total'
-            'hospitalized_with_symptoms_active'
-            'hospitalized_with_symptoms_new'
             'intensive_care_total'
-            'intensive_care_active'
-            'intensive_care_new'
-            'confined_total'
-            'confined_active'
-            'confined_new'
+            'vent_total',
             'performed_tests_total'
-            'performed_tests_active'
-            'performed_tests_new'
         """
 
         data = self.get_raw_data()
@@ -140,27 +167,33 @@ class SwitzerlandManager():
 
         if data_hash != self.data_hash:
 
-            data.rename(columns={'name_canton': 'area_name',
-                                 'abbreviation_canton': 'area_code',
+            data.rename(columns={'abbreviation_canton_and_fl': 'region_code',
                                  'date': 'time_report',
-                                 'country' : 'country_name',
-                                 'deaths' : 'deaths_total'},
+                                 'time': 'time_report_clock_time',
+                                 'ncumul_deceased' : 'deaths_total',
+                                 'ncumul_tested' : 'performed_tests_total',
+                                 'ncumul_conf' : 'positive_total',
+                                 'ncumul_hosp' : 'hospitalized_total',
+                                 'ncumul_ICU' : 'intensive_care_total',
+                                 'ncumul_released' : 'released_total',
+                                 'ncumul_vent' : 'vent_total'},
                         inplace=True)
-            data['positive_total'] = np.nan
-            data['performed_test_total'] = np.nan
+            data['country_name'] = 'Switzerland'
+            data['region_name'] = 'Canton'
 
-            id_vars = ['time_report', 'country_name', 'area_name', 'area_code', 'lat', 'long']
+            id_vars = ['time_report', 'time_report_clock_time', 'country_name', 'region_code', 'source']
 
 
             value_vars = [
-              'hospitalized_with_symptoms', 'intensive_care', 'total_hospitalized',
-              'home_confinment', 'total_currently_positive_cases', 'new_positive_cases',
-              'recovered', 'deaths_total', 'total_positive_cases', 'tests_performed'
+              'performed_tests_total', 'positive_total', 'hospitalized_total',
+              'intensive_care_total', 'vent_total',
+              'released_total', 'deaths_total', 
             ]
-            # if needed remove the all-Nan columns
-            #data.drop(['tests_performed', 'hospitalized_with_symptoms', 'intensive_care', 'total_hospitalized', 'home_confinment', 'recovered', 'total_positive_cases'], axis=1, inplace=True)
             data = pd.melt(frame=data, value_vars=value_vars, id_vars=id_vars, var_name='value_type', value_name='value')
 
+            data['region_code_native'] = data['region_code']
+            data['region_code_native'] = data['region_code_native'].apply(lambda c : canton_code_to_name_dict[c])
+            data.loc[data.region_code == 'FL', 'region_name'] = 'FL'
 
             self.data_hash = data_hash
             self.data_harmonized = data
