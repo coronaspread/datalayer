@@ -24,10 +24,6 @@ regional_confirmed_cases_file_name = "covid-19-cases-uk.csv"
 
 class UKManager:
 
-    def __init__(self):
-        self.data_hash = None
-        self.data_harmonized = None
-
     def download(self):
 
         timestamp = datetime.now().strftime("%Y-%m-%d_%H-%M-%S.%f_")
@@ -43,7 +39,7 @@ class UKManager:
         return self
 
     @staticmethod
-    def get_raw_data():
+    def raw_data():
 
         timestamp_newest = datetime.strptime('1000-01-01 00-00-00.0', "%Y-%m-%d %H-%M-%S.%f")
         for root, dirs, filenames in os.walk(raw_data_dir_path):
@@ -58,40 +54,37 @@ class UKManager:
 
         return data_per_region, data_per_area
 
+    @staticmethod
+    def raw_data_hash(raw_data):
+        return hash((tuple(pd.util.hash_pandas_object(raw_data[0])), tuple(pd.util.hash_pandas_object(raw_data[1]))))
+
     def harmonized(self) -> pd.DataFrame:
 
-        data_per_region, data_per_area = UKManager.get_raw_data()
+        data_per_region, data_per_area = self.raw_data()
 
-        data_hash = hash((tuple(pd.util.hash_pandas_object(data_per_region)), tuple(pd.util.hash_pandas_object(data_per_area))))
+        data_per_area = data_per_area.rename(columns={"TotalCases": "Value"})
+        data_per_area['Indicator'] = 'TotalCases'
 
-        if data_hash != self.data_hash:
+        data_merged = pd.concat([data_per_region, data_per_area], sort=True).reset_index(drop=True)
 
-            data_per_area = data_per_area.rename(columns={"TotalCases": "Value"})
-            data_per_area['Indicator'] = 'TotalCases'
+        data_merged.rename(columns={'Area': 'area_name',
+                                    'AreaCode': 'area_code',
+                                    'Country': 'region_name',
+                                    'Date': 'time_report',
+                                    'Indicator': 'value_type',
+                                    'Value': 'value'},
+                           inplace=True)
 
-            data_merged = pd.concat([data_per_region, data_per_area], sort=True).reset_index(drop=True)
+        data_merged.value_type.replace(to_replace={'ConfirmedCases': 'positive_total',
+                                                   'Deaths': 'deaths_total',
+                                                   'Tests': 'performed_tests_total',
+                                                   'TotalCases': 'positive_total'},
+                                       inplace=True)
+        data_merged['country_name'] = 'United Kingdom'
+        data_merged['value'] = data_merged.value. \
+            replace(to_replace=r'(\d+) ?to ?(\d+)', value=r'\1-\2', regex=True). \
+            apply(pd.to_numeric, errors='ignore')
+        data_merged['region_name'] = data_merged.region_name. \
+            replace(to_replace=r'UK', value=np.nan, regex=True)
 
-            data_merged.rename(columns={'Area': 'area_name',
-                                        'AreaCode': 'area_code',
-                                        'Country': 'region_name',
-                                        'Date': 'time_report',
-                                        'Indicator': 'value_type',
-                                        'Value': 'value'},
-                               inplace=True)
-
-            data_merged.value_type.replace(to_replace={'ConfirmedCases': 'positive_total',
-                                                       'Deaths': 'deaths_total',
-                                                       'Tests': 'performed_tests_total',
-                                                       'TotalCases': 'positive_total'},
-                                           inplace=True)
-            data_merged['country_name'] = 'United Kingdom'
-            data_merged['value'] = data_merged.value. \
-                replace(to_replace=r'(\d+) ?to ?(\d+)', value=r'\1-\2', regex=True). \
-                apply(pd.to_numeric, errors='ignore')
-            data_merged['region_name'] = data_merged.region_name. \
-                replace(to_replace=r'UK', value=np.nan, regex=True)
-
-            self.data_hash = data_hash
-            self.data_harmonized = data_merged
-
-        return self.data_harmonized
+        return data_merged
