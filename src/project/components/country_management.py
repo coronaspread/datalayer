@@ -1,8 +1,15 @@
 import pandas as pd
 import numpy as np
 
-from src.project.components.uk_management import UKManager
 import src.general.exceptions as exept
+from src.project.components.austria_management import AustriaManager
+from src.project.components.china_management import ChinaManager
+from src.project.components.france_management import FranceManager
+from src.project.components.italy_management import ItalyManager
+from src.project.components.switzerland_management import SwitzerlandManager
+from src.project.components.uk_management import UKManager
+from src.project.components.usa_management import USAManager
+
 
 def docstring_parameter(*sub):
     def dec(obj):
@@ -58,12 +65,27 @@ columns = [
     'is_new_case',
     'is_new_death']
 
+
 class CountryManager:
 
     def __init__(self, country):
         self.country_name = country
-        if country == 'uk':
-            self.country_manager = UKManager()
+
+        country_managers = {
+            'austria': AustriaManager,
+            'china': ChinaManager,
+            'france': FranceManager,
+            'italy': ItalyManager,
+            'switzerland': SwitzerlandManager,
+            'uk': UKManager,
+            'usa': USAManager
+        }
+
+        if country not in country_managers.keys():
+            raise exept.IllegalArgumentException('The country "' + country + '" is not valid. ' +
+                                                 'Valid countries are ' + str(country_managers.keys()) + '.')
+
+        self.country_manager = country_managers[country]
 
     def download(self):
         self.country_manager.download()
@@ -146,16 +168,17 @@ class CountryManager:
 
         invalid_value_types = list(np.unique([value_type for value_type in data_harmonized['value_type'] if value_type not in value_types]))
         if invalid_value_types:
-            raise exept.InvalidDataModel(
-                'The dataset for the country ' + self.country_name + ' is not correctly harmonized.' +
-                'The column value_type ' + str(invalid_value_types) + ' are invalid')
+            raise exept.InvalidDataModel('The dataset for the country ' + self.country_name + ' is not correctly harmonized.' +
+                                         'The column value_type ' + str(invalid_value_types) + ' are invalid')
 
         return data_harmonized
 
 
 if __name__ == '__main__':
-
     # from src.project.components.country_management import CountryManager
+
+    import pandas as pd
+    import numpy as np
 
     pd.set_option('display.width', 700)
     pd.options.display.max_colwidth = 100
