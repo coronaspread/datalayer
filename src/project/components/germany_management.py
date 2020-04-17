@@ -74,10 +74,3 @@ class GermanyManager:
 
         return self.data_harmonized
 
-if __name__ == '__main__':
-    gm = GermanyManager()
-    data = gm.download().harmonized()
-    data.to_csv("hehe.csv")
-    print(data.columns)
-    print(data.shape)
-
