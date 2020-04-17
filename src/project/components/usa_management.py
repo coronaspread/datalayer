@@ -15,12 +15,6 @@ from datetime import datetime
 import os
 import urllib.request
 
-# pd.set_option('display.width', 700)
-# pd.options.display.max_colwidth = 100
-# pd.set_option('display.max_rows', 100)
-# pd.set_option('display.max_columns', 500)
-# np.set_printoptions(linewidth=800)
-
 data_url_head_covid = 'https://raw.githubusercontent.com/nytimes/covid-19-data/master/'
 data_file_name_covid = 'us-counties.csv'
 
