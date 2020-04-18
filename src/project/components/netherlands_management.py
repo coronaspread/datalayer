@@ -64,12 +64,12 @@ class NetherlandsManager:
 
         data_cases, data_fatalities, data_hospitalized, data_cases_total = self.raw_data()
 
-        data_cases["type"] = "new_positive_cases"
+        data_cases["type"] = "positive_new"
 
         data_fatalities["Gemeentenaam"] = "Netherlands"
         data_fatalities["Gemeentecode"] = "9999"
         data_fatalities["Provincienaam"] = "Netherlands"
-        data_fatalities["type"] = "deaths"
+        data_fatalities["type"] = "deaths_total"
         data_fatalities = pd.DataFrame(data_fatalities, columns=["Datum", "Gemeentenaam", "Gemeentecode", "Provincienaam", "Aantal",
                                                                  "type"])
         data_fatalities["Aantal"] = data_fatalities["Aantal"] * -1
@@ -77,14 +77,14 @@ class NetherlandsManager:
         data_hospitalized["Gemeentenaam"] = "Netherlands"
         data_hospitalized["Gemeentecode"] = "9998"
         data_hospitalized["Provincienaam"] = "Netherlands"
-        data_hospitalized["type"] = "total_hospitalized"
+        data_hospitalized["type"] = "hospitalized_total"
         data_hospitalized = pd.DataFrame(data_hospitalized,
                                          columns=["Datum", "Gemeentenaam", "Gemeentecode", "Provincienaam", "Aantal",
                                                   "type"])
         data_cases_total["Gemeentenaam"] = "Netherlands"
         data_cases_total["Gemeentecode"] = "9998"
         data_cases_total["Provincienaam"] = "Netherlands"
-        data_cases_total["type"] = "total_positive_cases"
+        data_cases_total["type"] = "positive_total"
 
         data_merged = pd.concat([data_cases, data_fatalities, data_hospitalized, data_cases_total],
                                 ignore_index=True)
@@ -92,6 +92,8 @@ class NetherlandsManager:
                                     "Gemeentenaam": "area_name",
                                     "Gemeentecode": "area_code",
                                     "Provincienaam": "region_name",
+                                    "type": "value_type",
                                     "Aantal": "value"}, inplace=True)
 
         return data_merged
+
