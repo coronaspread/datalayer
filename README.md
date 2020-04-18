@@ -1,8 +1,8 @@
 # Installation
 
 ```bash
-conda create --name codevscovid19 python=3.8
-conda activate codevscovid19
+conda create --name corona python=3.8
+conda activate corona
 conda install numpy pandas scikit-learn
 conda install -c esri arcgis 
 ```
