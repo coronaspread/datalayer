@@ -203,17 +203,21 @@ class CountryManager:
             'is_new_death': is_boolean
         }
 
+        issue_string = ''
         for column_name in self.data_harmonized.columns:
             column = self.data_harmonized[column_name]
             column_is_valid = column_check_functions[column_name]
+            # print(column)
             if not column_is_valid(column):
+                if not issue_string:
+                    issue_string = 'The dataset for the country ' + self.country + ' is not correctly harmonized.'
                 if column_name == 'country_code':
-                    raise exept.InvalidDataModel('The dataset for the country ' + self.country + ' is not correctly harmonized.' +
-                                                 'The column ' + column_name + ' has multiple isos.')
+                    issue_string = issue_string + '\n The column ' + column_name + ' has multiple isos.'
                 else:
                     invalid_elements = list(np.unique([element for element in column if not column_is_valid(pd.Series(element))]))
-                    raise exept.InvalidDataModel('The dataset for the country ' + self.country + ' is not correctly harmonized.' +
-                                                 'The column ' + column_name + ' has the invalid values ' + str(invalid_elements) + '.')
+                    issue_string = issue_string + '\n The column ' + column_name + ' has the invalid values ' + str(invalid_elements) + '.'
+        if issue_string:
+            raise exept.InvalidDataModel(issue_string)
 
         return self.data_harmonized
 
