@@ -69,9 +69,9 @@ class USAManager:
         data_covid.loc[data_covid.county == 'New York City', 'fips'] = 36061
         # data_covid = data_covid.dropna(subset=['fips'])
         data_covid['country_name'] = 'United States of America'
-        data_covid['country_iso'] = 'USA'
+        data_covid['country_code'] = 'USA'
         data_covid['fips'] = pd.Series(data_covid.fips, dtype="Int64")
-        data_covid['region_code'] = data_covid.fips // 1000
+        data_covid['region_code'] = pd.Series(data_covid.fips // 1000)
         data_covid['source'] = 'https://github.com/nytimes/covid-19-data'
 
         data_covid.rename(columns={'date': 'time_report',
@@ -87,6 +87,10 @@ class USAManager:
         for area_code in data_covid.area_code.unique():
             if isinstance(area_code, np.int64):
                 data_covid.loc[data_covid.area_code == area_code, ['latitude', 'longitude']] = data_census.loc[area_code, ['INTPTLAT', 'INTPTLONG']].values
+
+        data_covid['region_code'] = data_covid.region_code.apply(str)
+        data_covid['area_code'] = data_covid.area_code.apply(str)
+        data_covid['time_report'] = pd.to_datetime(data_covid.time_report, format='%Y-%m-%d')
 
         id_vars = [col for col in data_covid.columns if col not in ['positive_total', 'deaths_total']]
 
