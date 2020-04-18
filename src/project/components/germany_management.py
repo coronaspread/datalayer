@@ -10,6 +10,7 @@ url = "https://api.public.fusionbase.io/cases"
 headers = {
     'X-API-Key': 'd20ca43d-9626-43e4-a304-8ff59feec044'
 }
+# 'd20ca43d-9626-43e4-a304-8ff59feec044'
 
 raw_data_dir_path = 'data/raw/germany/'
 
@@ -65,5 +66,9 @@ class GermanyManager:
                             'kreis_name': 'area_name',
                             'kreis_ags': 'area_code'}). \
             drop(['cases_per_population', 'cases_per_100k', 'population', 'kreis_nuts', 'Unnamed: 0'], axis=1)
+        data_per_region['region_code'] = data_per_region.region_code.apply(str)
+        data_per_region['area_code'] = data_per_region.area_code.apply(str)
+        data_per_region['time_report'] = pd.to_datetime(data_per_region.time_report, format='%Y-%m-%dT%H:%M:%S')
+        data_per_region['time_database'] = pd.to_datetime(data_per_region.time_database, format='%Y-%m-%dT%H:%M:%S.%f')
 
         return data_per_region

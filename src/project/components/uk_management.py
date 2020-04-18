@@ -86,5 +86,6 @@ class UKManager:
             apply(pd.to_numeric, errors='ignore')
         data_merged['region_name'] = data_merged.region_name. \
             replace(to_replace=r'UK', value=np.nan, regex=True)
+        data_merged['time_report'] = pd.to_datetime(data_merged.time_report, format='%Y-%m-%d')
 
         return data_merged
