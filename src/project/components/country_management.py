@@ -7,6 +7,7 @@ from src.project.components.china_management import ChinaManager
 from src.project.components.france_management import FranceManager
 from src.project.components.germany_management import GermanyManager
 from src.project.components.italy_management import ItalyManager
+from src.project.components.netherlands_management import NetherlandsManager
 from src.project.components.switzerland_management import SwitzerlandManager
 from src.project.components.uk_management import UKManager
 from src.project.components.usa_management import USAManager
@@ -65,6 +66,7 @@ country_managers = {
     'france': (FranceManager, 'France'),
     'germany': (GermanyManager, 'Germany'),
     'italy': (ItalyManager, 'Italy'),
+    'netherlands': (NetherlandsManager, 'Netherlands'),
     'switzerland': (SwitzerlandManager, 'Switzerland'),
     'uk': (UKManager, 'United Kingdom'),
     'usa': (USAManager, 'United States of America')
@@ -235,11 +237,6 @@ if __name__ == '__main__':
     pd.set_option('display.max_columns', 500)
     np.set_printoptions(linewidth=800)
 
+
     cm = CountryManager('uk')
     cm.harmonized()
-    cm.harmonized()
-    cm.country_manager.harmonized()
-    type(cm.country_manager.raw_data)
-
-    cm.download().harmonized()
-    cm.raw_data()
