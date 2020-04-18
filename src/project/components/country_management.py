@@ -170,12 +170,12 @@ class CountryManager:
 
         invalid_columns = [column_name for column_name in self.data_harmonized.columns if column_name not in columns]
         if invalid_columns:
-            raise exept.InvalidDataModel('The dataset for the country ' + self.country + ' is not correctly harmonized.' +
+            raise exept.InvalidDataModel('The dataset for the country ' + self.country + ' is not correctly harmonized. \n' +
                                          'The columns ' + str(invalid_columns) + ' are invalid')
 
         all_strings = lambda c: c.apply(type).eq(str).all()
         all_strings_or_nan = lambda c: c.apply(lambda e: isinstance(e, str) or np.isnan(e)).all()
-        all_int_range = lambda c: c.apply(lambda e: isinstance(e, np.int64) or (isinstance(e, str) and re.fullmatch(r'\d+-\d+', e))).all()
+        all_int_range = lambda c: c.apply(lambda e: isinstance(e, (int, np.integer)) or (isinstance(e, str) and re.fullmatch(r'\d+-\d+', e))).all()
         is_float = lambda c: c.dtype == 'float64'
         is_boolean = lambda c: c.dtype == 'float64'
 
@@ -186,7 +186,7 @@ class CountryManager:
             'time_database': is_datetime,
             'time_downloaded': is_datetime,
             'country_name': lambda c: all_strings(c) and (c == self.country_name).all(),
-            'country_code': lambda c: all_strings(c) and len(c.unique(c)) == 1,
+            'country_code': lambda c: all_strings(c) and len(c.unique()) == 1,
             'region_name': all_strings_or_nan,
             'region_code': all_strings_or_nan,
             'region_code_native': all_strings_or_nan,
