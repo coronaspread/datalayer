@@ -85,6 +85,7 @@ class ChinaManager:
             data_merged.drop(['outcome'], axis=1, inplace=True)
             data_merged['value_type'] = 'positive_new'
             data_merged = data_merged.append([data_dead, data_discharge])
+            data_merged.drop(['value'], axis=1, inplace=True)
             return data_merged
 
         data_per_region['value_type'] = 'positive_new'
