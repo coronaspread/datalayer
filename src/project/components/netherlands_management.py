@@ -93,6 +93,6 @@ class NetherlandsManager:
                                     "Provincienaam": "region_name",
                                     "type": "value_type",
                                     "Aantal": "value"}, inplace=True)
-        data_merged["time_report"] = data_merged["time_report"].astype(str)
+        data_merged["time_report"] = pd.to_datetime(data_merged["time_report"])
         data_merged["area_code"] = data_merged["area_code"].astype(str)
         return data_merged
