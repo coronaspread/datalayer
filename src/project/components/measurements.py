@@ -109,5 +109,6 @@ class MeasurementsManager():
                             'End': 'date_revoked',
                             'Comment': 'comment'}). \
             drop(['Unnamed: 0', 'ADM1'], axis=1)
+        data_merged = data_measurements_spreadsheet.append(data_measurements_fusionbase)
+        return data_merged
 
-        return data_measurements_fusionbase, data_measurements_spreadsheet
