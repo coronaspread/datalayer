@@ -72,7 +72,6 @@ class NetherlandsManager:
         data_fatalities["type"] = "deaths_total"
         data_fatalities = pd.DataFrame(data_fatalities, columns=["Datum", "Gemeentenaam", "Gemeentecode", "Provincienaam", "Aantal",
                                                                  "type"])
-        data_fatalities["Aantal"] = data_fatalities["Aantal"] * -1
 
         data_hospitalized["Gemeentenaam"] = "Netherlands"
         data_hospitalized["Gemeentecode"] = "9998"
@@ -94,6 +93,6 @@ class NetherlandsManager:
                                     "Provincienaam": "region_name",
                                     "type": "value_type",
                                     "Aantal": "value"}, inplace=True)
-
+        data_merged["time_report"] = data_merged["time_report"].astype(str)
+        data_merged["area_code"] = data_merged["area_code"].astype(str)
         return data_merged
-
